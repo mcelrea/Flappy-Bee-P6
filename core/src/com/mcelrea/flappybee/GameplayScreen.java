@@ -6,9 +6,11 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
@@ -21,7 +23,9 @@ public class GameplayScreen implements Screen {
     private Camera camera;
     private Viewport viewport;//the size of the view from the camera
     Bee player = new Bee();
-    Flower flower = new Flower();
+    Array<Flower> flowers = new Array<Flower>();
+    private float GAP_BETWEEN_FLOWERS = 200f;
+    private Texture backImage;
 
     public GameplayScreen(MyGdxGame myGdxGame) {
     }
@@ -35,8 +39,8 @@ public class GameplayScreen implements Screen {
         shapeRenderer.setAutoShapeType(true);
         batch = new SpriteBatch();
         viewport = new FitViewport(WORLD_WIDTH,WORLD_HEIGHT,camera);
-        flower.setPosition(300);
-    }
+        backImage = new Texture("back.jpg");
+    }//.
 
     @Override
     public void render(float delta) {
@@ -48,6 +52,10 @@ public class GameplayScreen implements Screen {
         batch.setProjectionMatrix(camera.projection);
         batch.setTransformMatrix(camera.view);
         batch.begin();
+        batch.draw(backImage,0,0);
+        for(int i=0; i < flowers.size; i++) {
+            flowers.get(i).draw(batch);
+        }
         player.draw(batch);
         batch.end();
 
@@ -55,9 +63,20 @@ public class GameplayScreen implements Screen {
         shapeRenderer.setProjectionMatrix(camera.projection);
         shapeRenderer.setTransformMatrix(camera.view);
         shapeRenderer.begin();
-        player.drawDebug(shapeRenderer);
-        flower.drawDebug(shapeRenderer);
+        //player.drawDebug(shapeRenderer);
+        //for(int i=0; i < flowers.size; i++) {
+        //    flowers.get(i).drawDebug(shapeRenderer);
+        //}
         shapeRenderer.end();
+    }
+
+    public boolean checkForCollision() {
+        for(int i=0; i < flowers.size; i++) {
+            if(flowers.get(i).isBeeColliding(player)) {
+                return true;
+            }
+        }
+        return false;//looked at every flower
     }
 
     public void keepBeeOnScreen() {
@@ -65,12 +84,57 @@ public class GameplayScreen implements Screen {
                 MathUtils.clamp(player.getY(),0,WORLD_HEIGHT));
     }
 
+    public void createNewFlower() {
+        Flower newFlower = new Flower();//create
+        newFlower.setPosition(WORLD_WIDTH+33);//place offscreen
+        flowers.add(newFlower);//add to Array
+    }
+
+    public void checkIfNewFlowerIsNeeded() {
+        if(flowers.size == 0) {
+            createNewFlower();
+        }
+        else {
+            Flower lastFlower = flowers.peek();
+            if(lastFlower.getX() < WORLD_WIDTH - GAP_BETWEEN_FLOWERS) {
+                createNewFlower();
+            }
+        }
+    }
+
+    public void removeFlowersIfPassed() {
+        if(flowers.size > 0) {
+            Flower firstFlower = flowers.first();
+            if(firstFlower.getX() + 33 < 0) {
+                flowers.removeValue(firstFlower,true);//erase flower
+            }
+        }
+    }
+
     private void update(float delta) {
+        //update the bee
         player.update();//gravity
         if(Gdx.input.isKeyPressed(Input.Keys.SPACE)) {
             player.fly();
         }
         keepBeeOnScreen();
+
+        //update flowers
+        for(int i=0; i < flowers.size; i++) {
+            flowers.get(i).update(delta);
+        }
+        checkIfNewFlowerIsNeeded();
+        removeFlowersIfPassed();
+
+        //check for collisions
+        if(checkForCollision()) {
+            restart();
+        }
+    }
+
+    private void restart() {
+        flowers.clear();
+        player.reset();
     }
 
     public void clearScreen() {
@@ -103,3 +167,4 @@ public class GameplayScreen implements Screen {
 
     }
 }
+ //170:4

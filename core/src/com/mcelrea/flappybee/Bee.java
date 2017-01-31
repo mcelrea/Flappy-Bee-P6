@@ -61,4 +61,14 @@ public class Bee {
     public float getY() {
         return y;
     }
+
+    public Circle getCollisionCircle() {
+        return collisionCircle;
+    }
+
+    public void reset() {
+        x = 100;
+        y = GameplayScreen.WORLD_HEIGHT/2;
+        ySpeed = 0;
+    }
 }
