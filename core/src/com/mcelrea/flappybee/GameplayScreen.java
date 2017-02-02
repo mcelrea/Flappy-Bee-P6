@@ -3,10 +3,12 @@ package com.mcelrea.flappybee;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
@@ -26,8 +28,15 @@ public class GameplayScreen implements Screen {
     Array<Flower> flowers = new Array<Flower>();
     private float GAP_BETWEEN_FLOWERS = 200f;
     private Texture backImage;
+    private int score = 0;
+    private BitmapFont scoreFont;
+    private Sound music;
+    private Sound pointSound;
+    private Sound crashSound;
+    MyGdxGame game;
 
     public GameplayScreen(MyGdxGame myGdxGame) {
+        game = myGdxGame;
     }
 
     @Override
@@ -40,6 +49,11 @@ public class GameplayScreen implements Screen {
         batch = new SpriteBatch();
         viewport = new FitViewport(WORLD_WIDTH,WORLD_HEIGHT,camera);
         backImage = new Texture("back.jpg");
+        scoreFont = new BitmapFont(Gdx.files.internal("scoreFont.fnt"));
+        music = Gdx.audio.newSound(Gdx.files.internal("Plants vs Zombies - Roof Stage (1).mp3"));
+        music.loop(0.5f);
+        pointSound = Gdx.audio.newSound(Gdx.files.internal("point.wav"));
+        crashSound = Gdx.audio.newSound(Gdx.files.internal("hit.wav"));
     }//.
 
     @Override
@@ -51,12 +65,13 @@ public class GameplayScreen implements Screen {
         //draw graphics between begin/end
         batch.setProjectionMatrix(camera.projection);
         batch.setTransformMatrix(camera.view);
-        batch.begin();
+         batch.begin();
         batch.draw(backImage,0,0);
         for(int i=0; i < flowers.size; i++) {
             flowers.get(i).draw(batch);
         }
         player.draw(batch);
+        scoreFont.draw(batch,"Score: " + score, 225,600);
         batch.end();
 
         //draw all shapes between begin.end
@@ -128,13 +143,27 @@ public class GameplayScreen implements Screen {
 
         //check for collisions
         if(checkForCollision()) {
+            crashSound.play();
             restart();
+            music.stop();
+            game.setScreen(new StartScreen(game));
+        }
+
+        //update score
+        if(flowers.size > 0) {
+            Flower first = flowers.first();
+            if(first.getX() < player.getX() && !first.isPointClaimed()) {
+                score++;
+                pointSound.play();
+                first.setPointClaimed(true);
+            }
         }
     }
 
     private void restart() {
         flowers.clear();
         player.reset();
+        score = 0;
     }
 
     public void clearScreen() {

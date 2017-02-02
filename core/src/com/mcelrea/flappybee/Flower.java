@@ -24,6 +24,7 @@ public class Flower {
     private static final float HEIGHT_OFFSET = -400f;
     private Texture flowerImage;
     private Texture stemImage;
+    private boolean pointClaimed = false;
 
     public Flower() {
         y = MathUtils.random(HEIGHT_OFFSET);
@@ -115,5 +116,13 @@ public class Flower {
 
     public float getX() {
         return x;
+    }
+
+    public boolean isPointClaimed() {
+        return pointClaimed;
+    }
+
+    public void setPointClaimed(boolean pointClaimed) {
+        this.pointClaimed = pointClaimed;
     }
 }
